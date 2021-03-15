@@ -115,6 +115,10 @@ _BUILTIN_TYPES = {
         },
         'Z2': {
             'comment': 'Z2/Persistent object (Z4/Type)',
+            # 'references': {
+            #     'Z9_of_Z2': _Z9_of('Z2'),
+            # },
+            # 'Z1K1': {'internal': 'Z9_of_Z2'},
             'Z1K1': 'special',
             'Z2K1': {'external': 'Z6'},
             'Z2K2': {'external': 'Z1'},
@@ -313,7 +317,7 @@ _BUILTIN_TYPES = {
                     },
                 },
             },
-            'Z1K1': {'internal': 'special'},
+            'Z1K1': {'internal': 'Z9_for_Z40'},
             'Z40K1': {'internal': 'Z40'},
         },
         'Z50': {
@@ -336,7 +340,6 @@ _BUILTIN_TYPES = {
         },
         'Z80': {
             'comment': 'Z80/Byte (Z4/Type)',
-            'Z1K1': 'special',
             'Z1K1': 'special',
             'Z80K1': {'external': 'Z6'},
         },
@@ -500,6 +503,9 @@ class SchemaComponent:
             # TODO: This can be a reference, too.
             allow_additional = True
         zid_dict['additionalProperties'] = allow_additional
+
+        # Step 7: most things are objects.
+        zid_dict['type'] = 'object'
 
     def generate(self, ZID, root_directory=None, tag=None, dry_run=True):
         if root_directory is None:
