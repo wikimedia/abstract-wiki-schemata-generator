@@ -501,9 +501,6 @@ class SchemaComponent:
             allow_additional = True
         zid_dict['additionalProperties'] = allow_additional
 
-        # Step 7: most things are objects.
-        zid_dict['type'] = 'object'
-
     def generate(self, ZID, root_directory=None, tag=None, dry_run=True):
         if root_directory is None:
             assert(dry_run == True)
