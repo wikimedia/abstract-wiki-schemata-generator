@@ -1,3 +1,4 @@
+import contextlib
 import enum
 import io
 import logging
@@ -186,6 +187,15 @@ _BUILTIN_TYPES = {
 _RECORD_PATTERN = re.compile(r'^Z[1-9]\d*(K[1-9]\d*)?$')
 
 
+@contextlib.contextmanager
+def _printable():
+    fake_file = io.StringIO()
+    yield fake_file
+    fake_file.seek(0)
+    print(fake_file.read())
+
+
+
 class SchemaComponent:
 
     _DEFINITIONS_PATH = ['definitions', 'objects']
@@ -319,15 +329,12 @@ class SchemaComponent:
             zid, display_zid, spec = self._to_update.pop()
             self._update_from_spec(object_dict, zid, display_zid, spec)
 
-        if dry_run:
-            fake_file = io.StringIO()
-            yaml.dump(schema, fake_file)
-            fake_file.seek(0)
-            print(fake_file.read())
-
-        else:
-            with open(os.path.join(self._root, f'{ZID}.yaml'), 'w') as outp:
-                yaml.dump(schema, outp)
+        with contextlib.ExitStack() as stack:
+            if dry_run:
+                outp = stack.enter_context(_printable())
+            else:
+                outp = open(os.path.join(self._root, f'{ZID}.yaml'), 'w')
+            yaml.dump(schema, outp)
 
     def list(self):
         for key in self._builtin_dict.keys():
