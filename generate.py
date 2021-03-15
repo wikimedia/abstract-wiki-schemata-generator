@@ -31,7 +31,7 @@ _BUILTIN_TYPES = {
         },
         'Z4': {
             'Z1K1': 'special',
-            'Z4K1': 'Z4',
+            'Z4K1': {'internal': 'Z4'},
             'Z4K2': 'Z10',
             'Z4K3': 'Z8',
         },
@@ -97,7 +97,7 @@ _BUILTIN_TYPES = {
                 'Z10_full': {
                     'Z1K1': 'special',
                     'Z10K1': 'Z1',
-                    'Z10K2': 'Z10',
+                    'Z10K2': {'internal': 'Z10'},
                 },
             }
         },
@@ -259,18 +259,27 @@ class SchemaComponent:
         properties_dict = zid_dict.setdefault('properties', {})
         required = set()
         for key, value in spec.items():
+            required.add(key)
+            try:
+                internal = value.get('internal')
+            except AttributeError:
+                pass
+            else:
+                if internal is not None and _RECORD_PATTERN.match(internal):
+                    properties_dict[key] = self._ref_dict(self._reference_for(internal))
+                    continue
             if not _RECORD_PATTERN.match(key):
                 continue
             if _RECORD_PATTERN.match(value):
                 properties_dict[key] = self._ref_dict(self._external_reference(value))
-            elif key == 'Z1K1' and value == 'special':
+                continue
+            if key == 'Z1K1' and value == 'special':
                 allof = properties_dict.setdefault(key, {}).setdefault('allOf', [])
-                allof.append(self._ref_dict(self._reference_for('Z9')))
+                allof.append(self._ref_dict(self._external_reference('Z9')))
                 allof.append(self._special_z1k1(display_zid))
-            else:
-                logging.debug(f'Unrecognized property spec: {{{key}: {value}}}')
-                raise Exception
-            required.add(key)
+                continue
+            logging.debug(f'Unrecognized property spec: {{{key}: {value}}}')
+            raise Exception
 
         # Process non-required properties (we require properties by default).
         required = required - set(spec.get('notRequired', {}))
