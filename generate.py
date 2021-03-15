@@ -206,7 +206,9 @@ class SchemaComponent:
         self._to_update = []
 
     def _id_for(self, ZID):
-        return f'{self._tag}/{ZID}'
+        if self._tag is None:
+            return ZID
+        return f'{self._tag}_{ZID}'
 
     def _reference_for(self, ZID):
         return '/'.join(['#'] + self._DEFINITIONS_PATH + [ZID])
@@ -303,7 +305,9 @@ class SchemaComponent:
             allow_additional = True
         zid_dict['additionalProperties'] = allow_additional
 
-    def generate(self, root_directory, tag, ZID, dry_run=True):
+    def generate(self, ZID, root_directory=None, tag=None, dry_run=True):
+        if root_directory is None:
+            assert(dry_run == True)
         self._root = root_directory
         self._tag = tag
 
