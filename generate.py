@@ -4,6 +4,7 @@ import io
 import logging
 import os
 import re
+import sys
 import yaml
 
 
@@ -76,6 +77,7 @@ def _Z10_of(ZID):
 _BUILTIN_TYPES = {
     _FormatEnum.NORMAL: {
         'Z1': {
+            'comment': 'Z1/Object (Z4/Type)',
             'references': {
                 'Z1_terminal': {
                     'literally': {
@@ -112,22 +114,21 @@ _BUILTIN_TYPES = {
             },
         },
         'Z2': {
-            # 'references': {
-            #     'Z9_of_Z2': _Z9_of('Z2'),
-            # },
-            # 'Z1K1': {'internal': 'Z9_of_Z2'},
+            'comment': 'Z2/Persistent object (Z4/Type)',
             'Z1K1': 'special',
             'Z2K1': {'external': 'Z6'},
             'Z2K2': {'external': 'Z1'},
             'Z2K3': {'external': 'Z12'},
         },
         'Z3': {
+            'comment': 'Z3/Key (Z4/Type)',
             'Z1K1': 'special',
             'Z3K1': {'external': 'Z4'},
             'Z3K2': {'external': 'Z6'},
             'Z3K3': {'external': 'Z12'},
         },
         'Z4': {
+            'comment': 'Z4/Type (Z4/Type)',
             'references': {
                 _Z10_specialization('Z3'): _Z10_of('Z3'),
             },
@@ -137,11 +138,13 @@ _BUILTIN_TYPES = {
             'Z4K3': {'external': 'Z8'},
         },
         'Z5': {
+            'comment': 'Z5/Error (Z4/Type)',
             'Z1K1': 'special',
             'Z5K1': {'external': 'Z50'},
             'Z5K2': {'external': 'Z1'},
         },
         'Z6': {
+            'comment': 'Z6/String (Z4/Type)',
             'literally': {
                 'required': ['Z1K1', 'Z6K1'],
                 'properties': {
@@ -153,10 +156,12 @@ _BUILTIN_TYPES = {
                         'type': 'string',
                     },
                 },
+                'type': 'object',
                 'additionalProperties': False,
             }
         },
         'Z7': {
+            'comment': 'Z7/Function call (Z4/Type)',
             'Z1K1': 'special',
             'Z7K1': {'external': 'Z4'},
             'patternProperties': {
@@ -165,6 +170,7 @@ _BUILTIN_TYPES = {
             },
         },
         'Z8': {
+            'comment': 'Z8/Function (Z4/Type)',
             'references': {
                 _Z10_specialization('Z17'): _Z10_of('Z17'),
                 _Z10_specialization('Z20'): _Z10_of('Z20'),
@@ -175,10 +181,11 @@ _BUILTIN_TYPES = {
             'Z8K2': {'external': 'Z4'},
             'Z8K3': {'internal': _Z10_specialization('Z20')},
             'Z8K4': {'internal': _Z10_specialization('Z14')},
-            'Z8K5': {'external': 'Z8'},
+            'Z8K5': {'internal': 'Z8'},
             'notRequired': { 'Z8K4' },
         },
         'Z9': {
+            'comment': 'Z9/Reference (Z4/Type)',
             'literally': {
                 'required': ['Z1K1', 'Z9K1'],
                 'properties': {
@@ -192,9 +199,11 @@ _BUILTIN_TYPES = {
                     },
                 },
                 'additionalProperties': False,
+                'type': 'object',
             },
         },
         'Z10': {
+            'comment': 'Z10/List (Z4/Type)',
             'references': {
                 'Z10_empty': {
                     'Z1K1': 'special',
@@ -213,11 +222,13 @@ _BUILTIN_TYPES = {
             },
         },
         'Z11': {
+            'comment': 'Z11/Monolingual text (Z4/Type)',
             'Z1K1': 'special',
             'Z11K1': {'external': 'Z60'},
             'Z11K2': {'external': 'Z6'},
         },
         'Z12': {
+            'comment': 'Z12/Multilingual text (Z4/Type)',
             'references': {
                 _Z10_specialization('Z11'): _Z10_of('Z11'),
             },
@@ -225,6 +236,7 @@ _BUILTIN_TYPES = {
             'Z12K1': {'internal': _Z10_specialization('Z11')},
         },
         'Z14': {
+            'comment': 'Z14/Implementation (Z4/Type)',
             'Z1K1': 'special',
             'Z14K1': {'external': 'Z8'},
             'Z14K2': {'external': 'Z7'},
@@ -232,37 +244,45 @@ _BUILTIN_TYPES = {
             'Z14K4': {'external': 'Z6'},
         },
         'Z16': {
+            'comment': 'Z16/Code (Z4/Type)',
             'Z1K1': 'special',
             'Z16K1': {'external': 'Z61'},
             'Z16K2': {'external': 'Z6'},
         },
         'Z17': {
+            'comment': 'Z17/Argument declaration (Z4/Type)',
             'Z1K1': 'special',
             'Z17K1': {'external': 'Z4'},
             'Z17K2': {'external': 'Z6'},
             'Z17K3': {'external': 'Z12'},
         },
         'Z18': {
+            'comment': 'Z18/Argument reference (Z4/Type)',
             'Z1K1': 'special',
             'Z18K1': {'external': 'Z6'},
         },
         'Z20': {
+            'comment': 'Z20/Tester (Z4/Type)',
             'Z1K1': 'special',
             'Z20K1': {'external': 'Z7'},
             'Z20K2': {'external': 'Z8'},
         },
         'Z21': {
+            'comment': 'Z21/Unit (Z4/Type)',
             'Z1K1': 'special',
         },
         'Z22': {
+            'comment': 'Z22/Pair (Z4/Type)',
             'Z1K1': 'special',
             'Z22K1': {'external': 'Z1'},
             'Z22K2': {'external': 'Z1'},
         },
         'Z23': {
+            'comment': 'Z23/Nothing (Z4/Type)',
             'Z1K1': 'special',
         },
         'Z39': {
+            'comment': 'Z39/Key reference (Z4/Type)',
             'Z1K1': 'special',
             'Z39K1': {'external': 'Z6'},
             'Z39K2': {'external': 'Z1'},
@@ -274,6 +294,7 @@ _BUILTIN_TYPES = {
             'Z40K1': {'external': 'Z50'},
         },
         'Z40': {
+            'comment': 'Z40/Boolean (Z4/Type)',
             'references': {
                 'Z9_for_Z40': {
                     'literally': {
@@ -292,9 +313,11 @@ _BUILTIN_TYPES = {
                     },
                 },
             },
-            'Z1K1': {'internal': 'Z9_for_Z40'},
+            'Z1K1': {'internal': 'special'},
+            'Z40K1': {'internal': 'Z40'},
         },
         'Z50': {
+            'comment': 'Z50/Error type (Z4/Type)',
             'references': {
                 _Z10_specialization('Z3'): _Z10_of('Z3'),
             },
@@ -302,18 +325,23 @@ _BUILTIN_TYPES = {
             'Z50K1': {'internal': _Z10_specialization('Z3')},
         },
         'Z60': {
+            'comment': 'Z60/Language (Z4/Type)',
             'Z1K1': 'special',
             'Z60K1': {'external': 'Z6'},
         },
         'Z61': {
+            'comment': 'Z61/Programming language (Z4/Type)',
             'Z1K1': 'special',
             'Z61K1': {'external': 'Z6'},
         },
         'Z80': {
+            'comment': 'Z80/Byte (Z4/Type)',
+            'Z1K1': 'special',
             'Z1K1': 'special',
             'Z80K1': {'external': 'Z6'},
         },
         'Z86': {
+            'comment': 'Z86/Character (Z4/Type)',
             'references': {
                 'Z6_length_1': {
                     'literally': {
@@ -336,6 +364,7 @@ _BUILTIN_TYPES = {
             'Z86K1': {'internal': 'Z6_length_1'},
         },
         'Z99': {
+            'comment': 'Z99/Quote (Z4/Type)',
             'Z1K1': 'special',
             'Z99K1': {'external': 'Z1'},
         },
@@ -344,14 +373,6 @@ _BUILTIN_TYPES = {
 
 
 _RECORD_PATTERN = re.compile(r'^Z[1-9]\d*(K[1-9]\d*)?$')
-
-
-@contextlib.contextmanager
-def _printable():
-    fake_file = io.StringIO()
-    yield fake_file
-    fake_file.seek(0)
-    print(fake_file.read())
 
 
 class SchemaComponent:
@@ -525,12 +546,26 @@ class SchemaComponent:
             zid, display_zid, spec = self._to_update.pop()
             self._update_from_spec(object_dict, zid, display_zid, spec)
 
+        # Compose the resulting .yaml file.
+        #
+        # Start with comment if appropriate.
+        contents = ''
+        comment = literal_spec.get('comment')
+        if comment is not None:
+            contents += f'# {comment}\n'
+
+        # Append YAML dict.
+        fake_file = io.StringIO()
+        yaml.dump(schema, fake_file)
+        fake_file.seek(0)
+        contents += fake_file.read()
+
         with contextlib.ExitStack() as stack:
             if dry_run:
-                outp = stack.enter_context(_printable())
+                outp = sys.stdout
             else:
                 outp = stack.enter_context(open(os.path.join(self._root, f'{ZID}.yaml'), 'w'))
-            yaml.dump(schema, outp)
+            outp.write(contents)
 
     def list(self):
         for key in self._builtin_dict.keys():
