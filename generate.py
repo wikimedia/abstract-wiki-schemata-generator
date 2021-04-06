@@ -81,7 +81,7 @@ _BUILTIN_TYPES = {
             "references": {
                 "Z1_terminal": {
                     "literally": {
-                        "oneOf": [
+                        "anyOf": [
                             {"external": "Z6"},
                             {"external": "Z9"},
                         ],
@@ -96,7 +96,7 @@ _BUILTIN_TYPES = {
                 },
                 "Z1_generic": {
                     "literally": {
-                        "oneOf": [
+                        "anyOf": [
                             {"internal": "Z1_terminal"},
                             {"internal": "Z1_nonterminal"},
                         ],
@@ -107,7 +107,7 @@ _BUILTIN_TYPES = {
                 },
             },
             "literally": {
-                "oneOf": [
+                "anyOf": [
                     {"internal": "Z1_generic"},
                     {"internal": "Z1_nongeneric"},
                 ],
@@ -172,7 +172,7 @@ _BUILTIN_TYPES = {
                 # TODO: Use $data to infer from Z8's declarations.
                 r"^Z[1-9]\d*(K[1-9]\d*)?$": {"external": "Z1"},
             },
-            'cant_be': set(['Z7']),
+            "cant_be": set(["Z7"]),
         },
         "Z8": {
             "comment": "Z8/Function (Z4/Type)",
@@ -206,7 +206,7 @@ _BUILTIN_TYPES = {
                 "additionalProperties": False,
                 "type": "object",
             },
-            'cant_be': set(['Z9']),
+            "cant_be": set(["Z9"]),
         },
         "Z10": {
             "comment": "Z10/List (Z4/Type)",
@@ -531,16 +531,16 @@ class SchemaComponent:
         # or a reference (Z9).
         # This causes crazy circular reference shit.
         can_be = [self._reference_for(literal_name)]
-        cant_be = literal_spec.get('cant_be', set())
+        cant_be = literal_spec.get("cant_be", set())
         # for ref_type in ['Z9', 'Z7']:
-        for ref_type in ['Z9']:
+        for ref_type in ["Z9"]:
             if ref_type in cant_be:
                 continue
             can_be.append(self._external_reference(ref_type))
         can_be = [self._ref_dict(elem) for elem in can_be]
         assert can_be
         if len(can_be) > 1:
-            object_dict[ZID] = { 'anyOf': can_be }
+            object_dict[ZID] = {"anyOf": can_be}
         else:
             object_dict[ZID] = can_be[0]
 
