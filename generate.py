@@ -167,11 +167,12 @@ _BUILTIN_TYPES = {
         "Z7": {
             "comment": "Z7/Function call (Z4/Type)",
             "Z1K1": "special",
-            "Z7K1": {"external": "Z4"},
+            "Z7K1": {"external": "Z8"},
             "patternProperties": {
                 # TODO: Use $data to infer from Z8's declarations.
                 r"^Z[1-9]\d*(K[1-9]\d*)?$": {"external": "Z1"},
             },
+            'cant_be': set(['Z7']),
         },
         "Z8": {
             "comment": "Z8/Function (Z4/Type)",
@@ -205,6 +206,7 @@ _BUILTIN_TYPES = {
                 "additionalProperties": False,
                 "type": "object",
             },
+            'cant_be': set(['Z9']),
         },
         "Z10": {
             "comment": "Z10/List (Z4/Type)",
@@ -292,11 +294,6 @@ _BUILTIN_TYPES = {
             "Z39K2": {"external": "Z1"},
             "notRequired": {"Z39K2"},
         },
-        # Overwritten by the below. Why is this like this?
-        "Z40": {
-            "Z1K1": "special",
-            "Z40K1": {"external": "Z50"},
-        },
         "Z40": {
             "comment": "Z40/Boolean (Z4/Type)",
             "references": {
@@ -319,6 +316,7 @@ _BUILTIN_TYPES = {
             },
             "Z1K1": {"internal": "Z9_for_Z40"},
             "Z40K1": {"internal": "Z40"},
+            "notRequired": {"Z40K1"},
         },
         "Z50": {
             "comment": "Z50/Error type (Z4/Type)",
@@ -532,18 +530,19 @@ class SchemaComponent:
         # Any ZObject can be either a literal, a function call literal (Z7),
         # or a reference (Z9).
         # This causes crazy circular reference shit.
-        _ = """
-        object_dict[ZID] = {
-            'oneOf': [
-                self._ref_dict(elem) for elem in [
-                    self._external_reference('Z7'),
-                    self._external_reference('Z9'),
-                    self._reference_for(literal_name),
-                ]
-            ]
-        }
-        """
-        object_dict[ZID] = self._ref_dict(self._reference_for(literal_name))
+        can_be = [self._reference_for(literal_name)]
+        cant_be = literal_spec.get('cant_be', set())
+        # for ref_type in ['Z9', 'Z7']:
+        for ref_type in ['Z9']:
+            if ref_type in cant_be:
+                continue
+            can_be.append(self._external_reference(ref_type))
+        can_be = [self._ref_dict(elem) for elem in can_be]
+        assert can_be
+        if len(can_be) > 1:
+            object_dict[ZID] = { 'anyOf': can_be }
+        else:
+            object_dict[ZID] = can_be[0]
 
         while self._to_update:
             zid, display_zid, spec = self._to_update.pop()
@@ -572,9 +571,18 @@ class SchemaComponent:
                 )
             outp.write(contents)
 
-    def list(self):
+    def _list(self):
         for key in self._builtin_dict.keys():
+            yield key
+
+    def list(self):
+        for key in self._list():
             print(key)
+
+    def generate_all(self, root_directory=None, tag=None, dry_run=True):
+        for ZID in self._list():
+            logging.info(f"Generating config for {ZID} ...")
+            self.generate(ZID, root_directory, tag, dry_run)
 
 
 if __name__ == "__main__":
